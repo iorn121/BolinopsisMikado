@@ -10,12 +10,12 @@ In addition, there is an optional feature that display the calculation process.
 
 # Requirement
 
-[environment]
+## environment
 
 - Windows 10
 - cargo = "1.60.0"
 
-[dependencies]
+## dependencies
 
 - anyhow = "1.0.58"
 - clap = "3.2.14"
@@ -36,22 +36,20 @@ cargo install --path .
 
 # Usage
 
-**stdin**
+## swimjelly
+
+When you type this command, a jellyfish swims on your terminal window.
 
 ```bash
-rpncalc
-
-3 4 +
-# 7 will be output
+$swimjelly
 ```
 
-**text file**
+## cnvrt2ascii
+
+This command allows you convert an image or video into ASCII art or animation and display it on your terminal window.
 
 ```bash
-echo "4 2 -" > rpn.txt
-
-rpncalc rpn.txt
-# 2 will be output
+cnvrt2ascii sample.png
 ```
 
 **option**
