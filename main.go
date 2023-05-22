@@ -35,6 +35,7 @@ func init() {
 }
 
 func main() {
+	flag.Usage = flagUsage
 	flag.Parse()
 	fmt.Println(i, s, b)
 }
