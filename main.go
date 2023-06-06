@@ -3,6 +3,8 @@ package main
 import (
 	"flag"
 	"fmt"
+	"image"
+	_ "image/jpeg"
 	"os"
 )
 
@@ -10,11 +12,12 @@ func flagUsage() {
 usageText := `
 
 Usage:
-example command [arguments]
+bmikado [arguments]
+
 The commands are:
-convhex    convert Number to Hex
-convbinary convert Number to binary
-Use "Example [command] --help" for more infomation about a command`
+swimjelly	:	When you type this command, a jellyfish swims on your terminal window.
+
+Use "bmikado [command] --help" for more infomation about a command`
 
 fmt.Fprintf(os.Stderr, "%s\n\n", usageText)
 }
@@ -23,19 +26,75 @@ var i int
 var s string
 var b bool
 
+// サブコマンドを受け取る
 func init() {
-	// Var() 関数の引数は以下の通り
-    // 第一引数は束縛する変数のポインタ
-    // 第二引数はフラグ名
-    // 第三引数はデフォルト値
-    // 第四引数はフラグの説明
-	flag.IntVar(&i, "i", 0, "数値" )
-	flag.StringVar(&s, "s", "default", "文字列")
-	flag.BoolVar(&b, "b", false, "真偽値")
+	flag.Usage = flagUsage
+	flag.Parse()
+	switch flag.Arg(0) {
+	case "swimjelly":
+		displayJellyfish()
+		os.Exit(0)
+	}
 }
+
 
 func main() {
 	flag.Usage = flagUsage
 	flag.Parse()
 	fmt.Println(i, s, b)
+}
+
+// jpgファイルを読み込んで、その画像をアスキーアートに変換してターミナルに表示する
+func displayImage(image_path string) {
+	// imgで画像を読み込む
+	data, err := os.Open(image_path)
+	if err != nil {
+		fmt.Println("画像の読み込みに失敗しました")
+		os.Exit(1)
+	}
+	defer data.Close()
+	img,_,err := image.Decode(data)
+	// 画像をリサイズする
+	img = resizeImage(img,100,100)
+
+	// 画像をグレースケールに変換する
+
+	// 画像をアスキーアートに変換する
+
+	// 画像をターミナルに表示する
+
+}
+
+// 画像を指定したサイズにリサイズする
+func resizeImage(img image.Image, height int,width int) image.Image {
+	var ratio float64
+
+	// 画像のサイズを取得する
+	imgHeight := img.Bounds().Max.Y
+	imgWidth := img.Bounds().Max.X
+
+	// 縦横の比率を計算する
+	heightRatio := float64(height) / float64(imgHeight)
+	widthRatio := float64(width) / float64(imgWidth)
+
+	// 縦横の比率のうち、小さい方を採用する
+	if heightRatio < widthRatio {
+		ratio = heightRatio
+	} else {
+		ratio = widthRatio
+	}
+	resizedImage := &image.RGBA{}
+	// 縦横の比率を元にリサイズする
+	resizedImage=image.NewRGBA(image.Rect(0, 0, int(float64(imgWidth)*ratio), int(float64(imgHeight)*ratio)))
+
+	return resizedImage
+}
+
+// ターミナルにクラゲのアニメーションを表示する
+func displayJellyfish() {
+	for {
+		for _, r := range "-\\|/" {
+			fmt.Printf("\r%c", r)
+		}
+	}
 }
