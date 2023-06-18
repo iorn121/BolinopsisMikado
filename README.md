@@ -24,6 +24,17 @@ go get github.com/iorn121/BolinopsisMikado
 
 # Usage
 
+mikado [arguments]
+
+The commands are:
+mikado (mikado -normal, mikado -n) : When you type this command, a jellyfish swims on your terminal window.
+
+mikado -display (mikado -d) [filepath] : When you type this command, the image you specified will be displayed on your terminal window.
+
+mikado -experiment (mikado -e) : When you type this command, a lissajous figure will be displayed on your terminal window.
+
+Use "mikado -help (mikado -h)" for more infomation about a command`
+
 ## mikado -help (mikado)
 
 ## mikado (mikado -default) (mikado -d)
