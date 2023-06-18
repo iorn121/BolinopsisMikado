@@ -1,79 +1,48 @@
-# Rust RPN (Reverse Polish Notation) CLI
+# "mikado" (BolinopsisMikado) CLI by Go
 
-This tool allows you to calculate the formula of Reverse Polish Notation written in standard input or in a text file.
+画像や映像を ASCII アートに変換してターミナル上で表示できます。
+Images and videos can be converted to ASCII art and displayed on the terminal.
+
+# Demo
+
+Todo: paste Demo Movie
 
 # Features
 
-If you install Cargo, Rust's build system and package manager environment, you can perform the calculation by simply typing the `rpncalc` command.
-
-In addition, there is an optional feature that display the calculation process.
+ローカルファイルの画像や映像を ASCII アートに変換してターミナル上で表示できます。
+デフォルトでカブトクラゲの ASCII アートをターミナルに表示できます。
 
 # Requirement
 
-## environment
-
-- Windows 10
-- cargo = "1.60.0"
-
-## dependencies
-
-- anyhow = "1.0.58"
-- clap = "3.2.14"
+Go 1.20
 
 # Installation
 
-You have to install Cargo from [The Rust community’s crate registry](https://crates.io/) or [rustup](https://www.rust-lang.org/tools/install).
-
 ```bash
-git clone https://github.com/iorn121/rust_RPN_cli
-
-cargo add clap
-cargo add anyhow
-
-cd rust_RPN_cli
-cargo install --path .
+go get github.com/iorn121/BolinopsisMikado
 ```
 
 # Usage
 
-## swimjelly
+## mikado -help (mikado)
 
-When you type this command, a jellyfish swims on your terminal window.
+## mikado (mikado -default) (mikado -d)
+
+When you type this command, a Bolinopsis Mikado swims on your terminal window.
 
 ```bash
-$swimjelly
+mikado
 ```
 
-## cnvrt2ascii
+## mikado -display {filename}
 
 This command allows you convert an image or video into ASCII art or animation and display it on your terminal window.
 
 ```bash
-cnvrt2ascii sample.png
-```
-
-**option**
-
-```bash
-rpncalc -v
-
-2 7 + 3 - 7 * 3 /
-# ["/", "3", "*", "7", "-", "3", "+", "7"] [2]
-# ["/", "3", "*", "7", "-", "3", "+"] [2, 7]
-# ["/", "3", "*", "7", "-", "3"] [9]
-# ["/", "3", "*", "7", "-"] [9, 3]
-# ["/", "3", "*", "7"] [6]
-# ["/", "3", "*"] [6, 7]
-# ["/", "3"] [42]
-# ["/"] [42, 3]
-# [] [14]
-# 14
-# The above will be output
+mikado -display sample.png
 ```
 
 # Note
-
-This tool was created in Windows environment, so I have not verified that this will work on Mac or Linux.
 
 # Author
 
