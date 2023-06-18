@@ -43,7 +43,7 @@ func lissajous(out io.Writer) {
 	gif.EncodeAll(out,&anim)
 }
 
-func make_lissajous() {
+func makeLissajous() {
 	rand.Seed(time.Now().UTC().UnixNano())
 	lissajous(os.Stdout)
 }
