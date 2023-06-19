@@ -49,6 +49,10 @@ const (
 )
 
 func make_lissajous(paths []string) {
+	if len(paths) == 0 {
+		path := "lissajous.gif"
+		lissajous(path)
+	}
 	for _, path := range paths {
 		rand.Seed(time.Now().UnixNano())
 		lissajous(path)
@@ -79,15 +83,12 @@ func lissajous(path string) {
 		anim.Delay = append(anim.Delay, delay)
 		anim.Image = append(anim.Image, img)
 	}
-	if path != "" {
-		f, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE, 0600)
-		if err != nil {
-			log.Fatal(err)
-		}
-		defer f.Close()
-		fmt.Println(path)
-		gif.EncodeAll(f, &anim)
-	} else {
-		gif.EncodeAll(os.Stdout, &anim)
+
+	f, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE, 0600)
+	if err != nil {
+		log.Fatal(err)
 	}
+	defer f.Close()
+	fmt.Println(path)
+	gif.EncodeAll(f, &anim)
 }
