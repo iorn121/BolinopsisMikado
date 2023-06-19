@@ -12,6 +12,8 @@ import (
 	"math"
 	"math/rand"
 	"os"
+	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/spf13/cobra"
@@ -19,7 +21,7 @@ import (
 
 // lissajousCmd represents the lissajous command
 var lissajousCmd = &cobra.Command{
-	Use:   "lissajous",
+	Use:   "lissajous [path1, path2,...]",
 	Short: "make lissajous gif",
 	Long:  `Create a GIF animation of a random Lissajous shape. args [path] are the path to the gif file created by lissajous.`,
 	Run: func(cmd *cobra.Command, paths []string) {
@@ -29,16 +31,6 @@ var lissajousCmd = &cobra.Command{
 
 func init() {
 	rootCmd.AddCommand(lissajousCmd)
-
-	// Here you will define your flags and configuration settings.
-
-	// Cobra supports Persistent Flags which will work for this command
-	// and all subcommands, e.g.:
-	// lissajousCmd.PersistentFlags().String("foo", "", "A help for foo")
-
-	// Cobra supports local flags which will only run when this command
-	// is called directly, e.g.:
-	// lissajousCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 }
 
 var palette = []color.Color{color.White, color.Black}
@@ -54,8 +46,14 @@ func make_lissajous(paths []string) {
 		lissajous(path)
 	}
 	for _, path := range paths {
-		rand.Seed(time.Now().UnixNano())
-		lissajous(path)
+		ext := filepath.Ext(path)
+		ext = strings.ToLower(ext)
+		if ext == ".gif" {
+			rand.Seed(time.Now().UnixNano())
+			lissajous(path)
+		} else {
+			log.Fatal("Unsupported file extension")
+		}
 	}
 }
 
