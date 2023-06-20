@@ -19,39 +19,28 @@ Go 1.20
 # Installation
 
 ```bash
-go get github.com/iorn121/BolinopsisMikado
+go install github.com/iorn121/BolinopsisMikado@latest
 ```
 
 # Usage
 
-mikado [arguments]
+BolinopsisMikado [arguments]
 
 The commands are:
-mikado (mikado -normal, mikado -n) : When you type this command, a jellyfish swims on your terminal window.
+BolinopsisMikado lissajous [path] : When you type this command, a random lissajous gif image is generated and saved to the specified path.
 
-mikado -display (mikado -d) [filepath] : When you type this command, the image you specified will be displayed on your terminal window.
+BolinopsisMikado img [filepath] : When you type this command, the image you specified will be displayed on your terminal window.
 
-mikado -experiment (mikado -e) : When you type this command, a lissajous figure will be displayed on your terminal window.
+Options:
+
+```
+-c Colored the ascii when output to the terminal (default true)
+-p string
+Image path to be convert (default "docs/images/lufei.jpg")
+
+```
 
 Use "mikado -help (mikado -h)" for more infomation about a command`
-
-## mikado -help (mikado)
-
-## mikado (mikado -default) (mikado -d)
-
-When you type this command, a Bolinopsis Mikado swims on your terminal window.
-
-```bash
-mikado
-```
-
-## mikado -display {filename}
-
-This command allows you convert an image or video into ASCII art or animation and display it on your terminal window.
-
-```bash
-mikado -display sample.png
-```
 
 # Note
 
