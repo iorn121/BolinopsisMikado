@@ -5,6 +5,7 @@ package cmd
 
 import (
 	"fmt"
+	"image"
 	"os"
 	"syscall"
 
@@ -16,13 +17,26 @@ import (
 var imgCmd = &cobra.Command{
 	Use:   "img",
 	Short: "convert image into ascii art",
-	Long:  `Convert image into ascii art. args [path] after "img" are the path to the image file.`,
-	Args:  cobra.MinimumNArgs(1),
+	Long: `
+Convert image into ascii art. args [path] after "img" are the path to the image file.
+-c bool : Colored the ascii when output to the terminal (default true)
+-p string : Image path to be convert (default "../img/BolinopsisMikado.jpg")`,
 	Run: func(cmd *cobra.Command, args []string) {
 		path, _ := cmd.Flags().GetString("path")
 		if path == "" {
 			printBolinopsisMikado()
 		} else {
+			colored, _ := cmd.Flags().GetBool("colored")
+			width_term, height_term := getTerminalSize()
+			width_img, height_img := getImageSize(path)
+			var width, height int
+			if width_term/width_img < height_term/height_img {
+				width = width_term
+				height = int(float64(width) / float64(width_img) * float64(height_img))
+			}
+			fmt.Println(width_term, height_term, width_img, height_img, width, height)
+			fmt.Println(colored)
+			// convertImageToAscii(path, width, height, colored)
 		}
 	},
 }
@@ -30,6 +44,7 @@ var imgCmd = &cobra.Command{
 func init() {
 	rootCmd.AddCommand(imgCmd)
 	imgCmd.Flags().StringP("path", "p", "", "image path to convert")
+	imgCmd.Flags().BoolP("colored", "c", true, "colored the ascii when output to the terminal")
 }
 
 func getTerminalSize() (int, int) {
@@ -44,6 +59,23 @@ func getTerminalSize() (int, int) {
 	}
 
 	return width, height
+}
+
+func getImageSize(path string) (int, int) {
+	file, err := os.Open(path)
+	if err != nil {
+		fmt.Printf("Error : %+v", err)
+		os.Exit(1)
+	}
+	defer file.Close()
+
+	img, _, err := image.DecodeConfig(file)
+	if err != nil {
+		fmt.Printf("Error : %+v", err)
+		os.Exit(1)
+	}
+
+	return img.Width, img.Height
 }
 
 func printBolinopsisMikado() {
