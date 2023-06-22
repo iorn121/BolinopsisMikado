@@ -5,8 +5,13 @@ package cmd
 
 import (
 	"fmt"
+	"image"
+	_ "image/jpeg"
+	"os"
+	"syscall"
 
 	"github.com/spf13/cobra"
+	"golang.org/x/crypto/ssh/terminal"
 )
 
 // imgCmd represents the img command
@@ -23,8 +28,8 @@ Convert image into ascii art. args [path] after "img" are the path to the image 
 			printBolinopsisMikado()
 		} else {
 			colored, _ := cmd.Flags().GetBool("colored")
-			width_term, height_term := img.getTerminalSize()
-			width_img, height_img := img.getImageSize(path)
+			width_term, height_term := getTerminalSize()
+			width_img, height_img := getImageSize(path)
 			var width, height int
 			if width_term/width_img < height_term/height_img {
 				width = width_term
@@ -35,6 +40,37 @@ Convert image into ascii art. args [path] after "img" are the path to the image 
 			// convertImageToAscii(path, width, height, colored)
 		}
 	},
+}
+
+func getTerminalSize() (int, int) {
+	var width int
+	var height int
+	var err error
+	width, height, err = terminal.GetSize(syscall.Stdin)
+
+	if err != nil {
+		fmt.Printf("Error : %+v", err)
+		os.Exit(1)
+	}
+
+	return width, height
+}
+
+func getImageSize(path string) (int, int) {
+	file, err := os.Open(path)
+	if err != nil {
+		fmt.Printf("Error : %+v", err)
+		os.Exit(1)
+	}
+	defer file.Close()
+
+	img, _, err := image.Decode(file)
+	if err != nil {
+		fmt.Printf("Error : %+v", err)
+		os.Exit(1)
+	}
+
+	return img.Bounds().Dx(), img.Bounds().Dy()
 }
 
 func init() {
