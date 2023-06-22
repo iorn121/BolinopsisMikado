@@ -34,12 +34,18 @@ Convert image into ascii art. args [path] after "img" are the path to the image 
 			if width_term/width_img < height_term/height_img {
 				width = width_term
 				height = int(float64(width) / float64(width_img) * float64(height_img))
+			} else {
+				width = int(float64(height_term) / float64(height_img) * float64(width_img))
+				height = height_term
 			}
 			fmt.Println(width_term, height_term, width_img, height_img, width, height)
 			fmt.Println(colored)
-			// convertImageToAscii(path, width, height, colored)
+			convertImageToAscii(path, width, height, colored)
 		}
 	},
+}
+
+func convertImageToAscii(path string, width int, height int, colored bool) {
 }
 
 func getTerminalSize() (int, int) {
