@@ -10,6 +10,7 @@ import (
 	"os"
 	"syscall"
 
+	"github.com/nfnt/resize"
 	"github.com/spf13/cobra"
 	"golang.org/x/crypto/ssh/terminal"
 )
@@ -45,7 +46,32 @@ Convert image into ascii art. args [path] after "img" are the path to the image 
 	},
 }
 
+// convertImageToAscii convert image to ascii art
+// path : path to the image file
+// width : width of the ascii art
+// height : height of the ascii art
+// colored : colored the ascii when output to the terminal
 func convertImageToAscii(path string, width int, height int, colored bool) {
+	file, err := os.Open(path)
+	if err != nil {
+		fmt.Printf("Error : %+v", err)
+		os.Exit(1)
+	}
+	defer file.Close()
+
+	img, _, err := image.Decode(file)
+	if err != nil {
+		fmt.Printf("Error : %+v", err)
+		os.Exit(1)
+	}
+
+	img = resizeImage(img, width, height)
+
+}
+
+func resizeImage(img image.Image, width int, height int) image.Image {
+	resized_img := resize.Resize(uint(width), uint(height), img, resize.Lanczos3)
+	return resized_img
 }
 
 func getTerminalSize() (int, int) {
