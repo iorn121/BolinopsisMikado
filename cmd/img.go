@@ -65,8 +65,6 @@ func convertImageToAscii(path string, width int, height int, colored bool) {
 		os.Exit(1)
 	}
 
-	img = resizeImage(img, width, height)
-
 }
 
 func resizeImage(img image.Image, width int, height int) image.Image {
