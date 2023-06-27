@@ -39,8 +39,6 @@ Convert image into ascii art. args [path] after "img" are the path to the image 
 				width = int(float64(height_term) / float64(height_img) * float64(width_img))
 				height = height_term
 			}
-			fmt.Println(width_term, height_term, width_img, height_img, width, height)
-			fmt.Println(colored)
 			convertImageToAscii(path, width, height, colored)
 		}
 	},
@@ -64,7 +62,34 @@ func convertImageToAscii(path string, width int, height int, colored bool) {
 		fmt.Printf("Error : %+v", err)
 		os.Exit(1)
 	}
+	img_resized := resizeImage(img, width, height)
 
+	ch := make(chan string)
+	for i := 0; i < height; i++ {
+		go convertLineToAscii(img_resized, i, colored, ch)
+	}
+	for i := 0; i < height; i++ {
+		fmt.Println(<-ch)
+	}
+}
+
+func convertLineToAscii(img image.Image, line int, colored bool, ch chan<- string) {
+	var ascii string
+	for i := 0; i < img.Bounds().Dx(); i++ {
+		r, g, b, _ := img.At(i, line).RGBA()
+		ascii += convertPixelToAscii(r, g, b, colored)
+	}
+	ch <- ascii
+}
+
+func convertPixelToAscii(r uint32, g uint32, b uint32, colored bool) string {
+	var ascii string
+	if colored {
+		ascii = fmt.Sprintf("\033[38;2;%d;%d;%dm▇\033[0m", r/256, g/256, b/256)
+	} else {
+		ascii = fmt.Sprintf("\033[38;2;%d;%d;%dm▇\033[0m", 0, 0, 0)
+	}
+	return ascii
 }
 
 func resizeImage(img image.Image, width int, height int) image.Image {
