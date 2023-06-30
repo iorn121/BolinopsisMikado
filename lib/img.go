@@ -1,4 +1,4 @@
-package lib
+package main
 
 import (
 	"fmt"
@@ -8,6 +8,11 @@ import (
 
 	"golang.org/x/crypto/ssh/terminal"
 )
+
+func main() {
+	width, height := getTerminalSize()
+	fmt.Printf("width : %d, height : %d\n", width, height)
+}
 
 func getTerminalSize() (int, int) {
 	var width int
