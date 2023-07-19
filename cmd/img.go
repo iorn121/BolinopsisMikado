@@ -52,7 +52,6 @@ func defaultImage() string {
 	// 実行ファイル直下のパスを取得
 	path, _ := os.Getwd()
 	dataPath := filepath.Join(path, "img")
-	// dataフォルダ直下の画像を一括で読み込む
 	defaultPath := filepath.Join(dataPath, "BolinopsisMikado.jpg")
 	return defaultPath
 }
@@ -69,6 +68,70 @@ func decideSize(path string) (int, int) {
 		width = int(float64(height) / float64(height_img) * float64(width_img))
 	}
 	return width, height
+}
+
+type colour struct {
+	r uint8
+	g uint8
+	b uint8
+}
+type ascii_dot struct {
+	col   int
+	row   int
+	color colour
+	char  string
+}
+
+type ascii_line struct {
+	width int
+	dots  []ascii_dot
+}
+
+type ascii_img struct {
+	height int
+	lines  []ascii_line
+}
+
+func (img *ascii_img) addLine(line ascii_line, index int) {
+	img.lines[index] = line
+}
+
+func (line *ascii_line) addDot(dot ascii_dot, index int) {
+	line.dots[index] = dot
+}
+
+func (dot *ascii_dot) setDot(img image.Image) {
+	dot.color = colorAverage(img)
+	dot.char = decideChar(img)
+}
+func colorAverage(img image.Image) colour {
+	h := img.Bounds().Dy()
+	w := img.Bounds().Dx()
+	var r_sum uint64
+	var g_sum uint64
+	var b_sum uint64
+	for i := 0; i < h; i++ {
+		for j := 0; j < w; j++ {
+			r, g, b, _ := img.At(i, j).RGBA()
+			r_sum += uint64(r)
+			g_sum += uint64(g)
+			b_sum += uint64(b)
+		}
+	}
+	return colour{r: uint8(r_sum / uint64(w*h)), g: uint8(g_sum / uint64(w*h)), b: uint8(b_sum / uint64(w*h))}
+}
+
+func decideChar(img image.Image) string {
+	h := img.Bounds().Dy()
+	w := img.Bounds().Dx()
+	var sum uint64
+	for i := 0; i < h; i++ {
+		for j := 0; j < w; j++ {
+			r, g, b, _ := img.At(i, j).RGBA()
+			sum += uint64(r + g + b)
+		}
+	}
+	return string([]rune("MNHQ$OC?7>!:-;. ")[sum/uint64(w*h*3)/256])
 }
 
 // convertImageToAscii convert image to ascii art
@@ -93,6 +156,8 @@ func convertImageToAscii(path string, width int, height int, colored bool) {
 
 	// output is array of string to be written by goroutine
 	var output = make([]string, height)
+
+	// output_ascii := ascii_img{height: height, lines: make([]ascii_line, height)}
 
 	ch := make(chan string)
 	for i := 0; i < height; i++ {
