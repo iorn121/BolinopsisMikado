@@ -11,6 +11,8 @@ import (
 	_ "image/png"
 	"os"
 	"path/filepath"
+	"strings"
+	"sync"
 	"syscall"
 
 	"github.com/nfnt/resize"
@@ -71,9 +73,9 @@ func decideSize(path string) (int, int) {
 }
 
 type colour struct {
-	r uint8
-	g uint8
-	b uint8
+	r uint32
+	g uint32
+	b uint32
 }
 type ascii_dot struct {
 	col   int
@@ -82,28 +84,26 @@ type ascii_dot struct {
 	char  string
 }
 
-type ascii_line struct {
-	width int
-	dots  []ascii_dot
-}
-
 type ascii_img struct {
 	height int
-	lines  []ascii_line
+	width  int
+	dots   [][]string
 }
 
-func (img *ascii_img) addLine(line ascii_line, index int) {
-	img.lines[index] = line
-}
-
-func (line *ascii_line) addDot(dot ascii_dot, index int) {
-	line.dots[index] = dot
-}
-
-func (dot *ascii_dot) setDot(img image.Image) {
+func (ascii_img *ascii_img) addDot(dot *ascii_dot, img image.Image, colored bool, ch chan bool, wg *sync.WaitGroup) {
 	dot.color = colorAverage(img)
 	dot.char = decideChar(img)
+	var ascii string
+	if colored {
+		ascii = fmt.Sprintf("\033[38;2;%d;%d;%dm%s\033[0m", dot.color.r/256, dot.color.g/256, dot.color.b/256, dot.char)
+	} else {
+		ascii = fmt.Sprintf("\033[38;2;%d;%d;%dm%s\033[0m", 0, 0, 0, dot.char)
+	}
+	ascii_img.dots[dot.row][dot.col] = ascii
+	ch <- true
+	wg.Done()
 }
+
 func colorAverage(img image.Image) colour {
 	h := img.Bounds().Dy()
 	w := img.Bounds().Dx()
@@ -118,7 +118,8 @@ func colorAverage(img image.Image) colour {
 			b_sum += uint64(b)
 		}
 	}
-	return colour{r: uint8(r_sum / uint64(w*h)), g: uint8(g_sum / uint64(w*h)), b: uint8(b_sum / uint64(w*h))}
+	// fmt.Println(r_sum/uint64(w*h)/256, g_sum/uint64(w*h)/256, b_sum/uint64(w*h)/256)
+	return colour{r: uint32(r_sum / uint64(w*h)), g: uint32(g_sum / uint64(w*h)), b: uint32(b_sum / uint64(w*h))}
 }
 
 func decideChar(img image.Image) string {
@@ -131,7 +132,7 @@ func decideChar(img image.Image) string {
 			sum += uint64(r + g + b)
 		}
 	}
-	return string([]rune("MNHQ$OC?7>!:-;. ")[sum/uint64(w*h*3)/256])
+	return string([]rune("MNHQ$OC?7>!:-;. ")[sum/uint64(w*h*3)%16])
 }
 
 // convertImageToAscii convert image to ascii art
@@ -152,23 +153,37 @@ func convertImageToAscii(path string, width int, height int, colored bool) {
 		fmt.Printf("Error : %+v", err)
 		os.Exit(1)
 	}
-	img_resized := resizeImage(img, width, height)
-
-	// output is array of string to be written by goroutine
-	var output = make([]string, height)
-
-	// output_ascii := ascii_img{height: height, lines: make([]ascii_line, height)}
-
-	ch := make(chan string)
-	for i := 0; i < height; i++ {
-		go convertLineToAscii(img_resized, i, colored, output, ch)
+	img_h := img.Bounds().Dy()
+	img_w := img.Bounds().Dx()
+	dots := make([][]string, height)
+	for line := range dots {
+		dots[line] = make([]string, width)
 	}
+	output_ascii := ascii_img{height: height, width: width, dots: dots}
+
+	ch := make(chan bool, height*width)
+	fmt.Println(height, width, colored)
+	var wg sync.WaitGroup
+
+	wg.Add(height * width)
+	h_len := img_h / height
+	w_len := img_w / width
 	for i := 0; i < height; i++ {
-		<-ch
+		for j := 0; j < width; j++ {
+			// crop the image
+			trimmed_img := img.(interface {
+				SubImage(r image.Rectangle) image.Image
+			}).SubImage(image.Rect(j*w_len, i*h_len, (j+1)*w_len, (i+1)*h_len))
+
+			dot := ascii_dot{row: i, col: j}
+			go output_ascii.addDot(&dot, trimmed_img, colored, ch, &wg)
+		}
 	}
+	wg.Wait()
+
 	// print the output to the terminal inserting newline
 	for i := 0; i < height; i++ {
-		fmt.Println(output[i])
+		fmt.Println(strings.Join(output_ascii.dots[i], ""))
 	}
 }
 
