@@ -132,6 +132,7 @@ func decideChar(img image.Image) string {
 			sum += uint64(r + g + b)
 		}
 	}
+	fmt.Println(sum / uint64(w*h*3))
 	return string([]rune("MNHQ$OC?7>!:-;. ")[sum/uint64(w*h*3)%16])
 }
 
