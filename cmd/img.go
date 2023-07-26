@@ -7,11 +7,13 @@ import (
 	"fmt"
 	"image"
 	_ "image/gif"
+	"image/jpeg"
 	_ "image/jpeg"
 	_ "image/png"
 	"os"
 	"path/filepath"
 	"reflect"
+	"strconv"
 	"strings"
 	"sync"
 	"syscall"
@@ -140,6 +142,10 @@ func colorAverage(img image.Image) colour {
 	return colour{r: uint64(r_average), g: uint64(g_average), b: uint64(b_average)}
 }
 
+type SubImager interface {
+	SubImage(r image.Rectangle) image.Image
+}
+
 // 画像をASCII文字に変換する
 // 画像の濃度は、画像の各ピクセルのRGB値の合計値で求める
 // 画像の濃度に応じて、文字を選択する
@@ -206,31 +212,37 @@ func convertImageToAscii(path string, width int, height int, colored bool) {
 	}
 	output_ascii := ascii_img{height: height, width: width, dots: dots}
 
-	// ch := make(chan bool, height*width)
-	fmt.Println(height, width, colored)
-	// var wg sync.WaitGroup
+	ch := make(chan bool, height*width)
+	fmt.Println(img_h, img_w)
+	var wg sync.WaitGroup
 
-	// wg.Add(height * width)
+	wg.Add(height * width)
 	h_len := img_h / height
 	w_len := img_w / width
 	for i := 0; i < height; i++ {
 		for j := 0; j < width; j++ {
-			// crop the image
-			trimmed_img := img.(interface {
-				SubImage(r image.Rectangle) image.Image
-			}).SubImage(image.Rect(j*w_len, i*h_len, (j+1)*w_len, (i+1)*h_len))
-
+			trimmed_img := img.(SubImager).SubImage(image.Rect(j*w_len, i*h_len, (j+1)*w_len, (i+1)*h_len))
+			save_image(trimmed_img, i*width+j)
 			dot := ascii_dot{row: i, col: j}
-			// go output_ascii.addDot(&dot, trimmed_img, colored, ch, &wg)
-			output_ascii.addDots(&dot, trimmed_img, colored)
+			go output_ascii.addDot(&dot, trimmed_img, colored, ch, &wg)
 		}
 	}
-	// wg.Wait()
+	wg.Wait()
 
 	// print the output to the terminal inserting newline
 	for i := 0; i < height; i++ {
 		fmt.Println(strings.Join(output_ascii.dots[i], ""))
 	}
+}
+
+func save_image(img image.Image, index int) {
+	fso, err := os.Create(fmt.Sprintf("output/out_%s.jpg", strconv.Itoa(index)))
+	if err != nil {
+		fmt.Println("create:", err)
+		return
+	}
+	defer fso.Close()
+	jpeg.Encode(fso, img, &jpeg.Options{Quality: 100})
 }
 
 func convertLineToAscii(img image.Image, line int, colored bool, output []string, ch chan<- string) {
