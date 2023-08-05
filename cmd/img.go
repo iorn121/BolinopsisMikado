@@ -47,6 +47,7 @@ Convert image into ascii art. args [path] after "img" are the path to the image 
 			width, height := decideSize(def_path)
 			convertImageToAscii(def_path, width, height, colored)
 		} else {
+			fmt.Println(path)
 			width, height := decideSize(path)
 			convertImageToAscii(path, width, height, colored)
 		}
@@ -113,9 +114,11 @@ func (ascii_img *ascii_img) addDots(dot *ascii_dot, img image.Image, colored boo
 	var ascii string
 	if colored {
 		ascii = fmt.Sprintf("\033[38;2;%d;%d;%dm%s\033[0m", dot.color.r/256, dot.color.g/256, dot.color.b/256, dot.char)
+		fmt.Println("color", ascii)
 	} else {
 		ascii = fmt.Sprintf("\033[38;2;%d;%d;%dm%s\033[0m", 0, 0, 0, dot.char)
 	}
+	fmt.Println(ascii)
 	ascii_img.dots[dot.row][dot.col] = ascii
 }
 
@@ -139,6 +142,7 @@ func colorAverage(img image.Image) colour {
 			b_average += float64(b) / float64(h*w)
 		}
 	}
+	// fmt.Println(r_average, g_average, b_average)
 	return colour{r: uint64(r_average), g: uint64(g_average), b: uint64(b_average)}
 }
 
