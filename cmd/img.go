@@ -95,6 +95,7 @@ type ascii_img struct {
 }
 
 func (ascii_img *ascii_img) addDot(dot *ascii_dot, img image.Image, colored bool, ch chan bool, wg *sync.WaitGroup) {
+	// fmt.Println(dot)
 	dot.color = colorAverage(img)
 	dot.char = decideChar(img)
 	var ascii string
@@ -131,19 +132,20 @@ func P(t interface{}) {
 func colorAverage(img image.Image) colour {
 	h := img.Bounds().Dy()
 	w := img.Bounds().Dx()
-	var r_average float64
-	var g_average float64
-	var b_average float64
+	var r_average uint64
+	var g_average uint64
+	var b_average uint64
 	for i := 0; i < h; i++ {
+		convertLineToAscii(img, i, true)
 		for j := 0; j < w; j++ {
 			r, g, b, _ := img.At(i, j).RGBA()
-			r_average += float64(r) / float64(h*w)
-			g_average += float64(g) / float64(h*w)
-			b_average += float64(b) / float64(h*w)
+			r_average += uint64(r)
+			g_average += uint64(g)
+			b_average += uint64(b)
 		}
 	}
-	// fmt.Println(r_average, g_average, b_average)
-	return colour{r: uint64(r_average), g: uint64(g_average), b: uint64(b_average)}
+	fmt.Println(r_average, g_average, b_average)
+	return colour{r: r_average / uint64(h*w), g: g_average / uint64(h*w), b: b_average / uint64(h*w)}
 }
 
 type SubImager interface {
@@ -226,8 +228,8 @@ func convertImageToAscii(path string, width int, height int, colored bool) {
 	for i := 0; i < height; i++ {
 		for j := 0; j < width; j++ {
 			trimmed_img := img.(SubImager).SubImage(image.Rect(j*w_len, i*h_len, (j+1)*w_len, (i+1)*h_len))
-			save_image(trimmed_img, i*width+j)
-			dot := ascii_dot{row: i, col: j}
+			// save_image(trimmed_img, i*width+j)
+			dot := ascii_dot{row: i, col: j, color: colour{}, char: "."}
 			go output_ascii.addDot(&dot, trimmed_img, colored, ch, &wg)
 		}
 	}
@@ -249,14 +251,13 @@ func save_image(img image.Image, index int) {
 	jpeg.Encode(fso, img, &jpeg.Options{Quality: 100})
 }
 
-func convertLineToAscii(img image.Image, line int, colored bool, output []string, ch chan<- string) {
+func convertLineToAscii(img image.Image, line int, colored bool) {
 	var ascii string
 	for i := 0; i < img.Bounds().Dx(); i++ {
 		r, g, b, _ := img.At(i, line).RGBA()
 		ascii += convertPixelToAscii(r, g, b, colored)
 	}
-	output[line] = ascii
-	ch <- ascii
+	fmt.Println(ascii)
 }
 
 func convertPixelToAscii(r uint32, g uint32, b uint32, colored bool) string {
