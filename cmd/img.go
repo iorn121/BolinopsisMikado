@@ -241,6 +241,7 @@ func convertImageToAscii(path string, width int, height int, colored bool) {
 	}
 }
 
+// save_image save image to file
 func save_image(img image.Image, index int) {
 	fso, err := os.Create(fmt.Sprintf("output/out_%s.jpg", strconv.Itoa(index)))
 	if err != nil {
