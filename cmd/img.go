@@ -6,6 +6,7 @@ package cmd
 import (
 	"fmt"
 	"image"
+	"image/color"
 	_ "image/gif"
 	"image/jpeg"
 	_ "image/jpeg"
@@ -63,23 +64,18 @@ func defaultImage() string {
 }
 
 func decideSize(path string) (int, int) {
-	width_term, height_term := getTerminalSize()
+	width_term, _ := getTerminalSize()
 	width_img, height_img := getImageSize(path)
 	var width, height int
-	if width_term/width_img < height_term/height_img {
-		width = width_term
-		height = int(float64(width) / float64(width_img) * float64(height_img))
-	} else {
-		height = height_term
-		width = int(float64(height) / float64(height_img) * float64(width_img))
-	}
+	width = width_term
+	height = width * height_img / width_img
 	return width, height
 }
 
 type colour struct {
-	r uint64
-	g uint64
-	b uint64
+	r uint32
+	g uint32
+	b uint32
 }
 type ascii_dot struct {
 	col   int
@@ -94,16 +90,12 @@ type ascii_img struct {
 	dots   [][]string
 }
 
-func (ascii_img *ascii_img) addDot(dot *ascii_dot, img image.Image, colored bool, ch chan bool, wg *sync.WaitGroup) {
+func (ascii_img *ascii_img) addDot(dot *ascii_dot, img image.Image, ch chan bool, wg *sync.WaitGroup) {
 	// fmt.Println(dot)
-	dot.color = colorAverage(img)
 	dot.char = decideChar(img)
 	var ascii string
-	if colored {
-		ascii = fmt.Sprintf("\033[38;2;%d;%d;%dm%s\033[0m", dot.color.r/256, dot.color.g/256, dot.color.b/256, dot.char)
-	} else {
-		ascii = fmt.Sprintf("\033[38;2;%d;%d;%dm%s\033[0m", 0, 0, 0, dot.char)
-	}
+	ascii = fmt.Sprintf("\033[38;2;%d;%d;%dm%s\033[0m", dot.color.r/256, dot.color.g/256, dot.color.b/256, dot.char)
+
 	ascii_img.dots[dot.row][dot.col] = ascii
 	ch <- true
 	wg.Done()
@@ -119,7 +111,7 @@ func (ascii_img *ascii_img) addDots(dot *ascii_dot, img image.Image, colored boo
 	} else {
 		ascii = fmt.Sprintf("\033[38;2;%d;%d;%dm%s\033[0m", 0, 0, 0, dot.char)
 	}
-	fmt.Println(ascii)
+	// fmt.Println(ascii)
 	ascii_img.dots[dot.row][dot.col] = ascii
 }
 
@@ -132,20 +124,20 @@ func P(t interface{}) {
 func colorAverage(img image.Image) colour {
 	h := img.Bounds().Dy()
 	w := img.Bounds().Dx()
-	var r_average uint64
-	var g_average uint64
-	var b_average uint64
+	var r_average uint32
+	var g_average uint32
+	var b_average uint32
 	for i := 0; i < h; i++ {
-		convertLineToAscii(img, i, true)
+		// convertLineToAscii(img, i, true)
 		for j := 0; j < w; j++ {
 			r, g, b, _ := img.At(i, j).RGBA()
-			r_average += uint64(r)
-			g_average += uint64(g)
-			b_average += uint64(b)
+			r_average += uint32(r)
+			g_average += uint32(g)
+			b_average += uint32(b)
 		}
 	}
-	fmt.Println(r_average, g_average, b_average)
-	return colour{r: r_average / uint64(h*w), g: g_average / uint64(h*w), b: b_average / uint64(h*w)}
+	fmt.Println(r_average/uint32(h*w), g_average/uint32(h*w), b_average/uint32(h*w))
+	return colour{r: r_average / uint32(h*w), g: g_average / uint32(h*w), b: b_average / uint32(h*w)}
 }
 
 type SubImager interface {
@@ -158,6 +150,7 @@ type SubImager interface {
 // 画像の濃度が高いほど、濃い文字を選択する
 // 画像の濃度が低いほど、薄い文字を選択する
 // 画像の濃度が0の場合、空白文字を選択する
+
 func decideChar(img image.Image) string {
 	h := img.Bounds().Dy()
 	w := img.Bounds().Dx()
@@ -169,28 +162,66 @@ func decideChar(img image.Image) string {
 		}
 	}
 	// fmt.Println(sum)
-	if sum == 0 {
-		return " "
-	} else if sum < 256*256*3 {
-		return "."
-	} else if sum < 256*256*3*2 {
-		return "*"
-	} else if sum < 256*256*3*3 {
-		return "+"
-	} else if sum < 256*256*3*4 {
-		return "x"
-	} else if sum < 256*256*3*5 {
-		return "X"
-	} else if sum < 256*256*3*6 {
-		return "M"
-	} else if sum < 256*256*3*7 {
-		return "W"
-	} else if sum < 256*256*3*8 {
-		return "#"
-	} else {
-		return "@"
-	}
+	// if sum == 0 {
+	// 	return " "
+	// } else if sum < 256*256*3 {
+	// 	return "."
+	// } else if sum < 256*256*3*2 {
+	// 	return "*"
+	// } else if sum < 256*256*3*3 {
+	// 	return "+"
+	// } else if sum < 256*256*3*4 {
+	// 	return "x"
+	// } else if sum < 256*256*3*5 {
+	// 	return "X"
+	// } else if sum < 256*256*3*6 {
+	// 	return "M"
+	// } else if sum < 256*256*3*7 {
+	// 	return "W"
+	// } else if sum < 256*256*3*8 {
+	// 	return "#"
+	// } else {
+	// 	return "@"
+	// }
+
+	// ascii_chars := "!\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~"
+	// 各文字列を画像処理して、エッジを計算して縦成分と横成分の合計を計算する
+
+	// vertical, horizontal := detectEdges(img)
+
+	// fmt.Println(vertical, horizontal)
+
+	return "x"
 }
+
+// 画像のエッジ検出を行う関数
+func detectEdges(img image.Image) ([][]int, [][]int) {
+    // 画像の幅と高さを取得
+    bounds := img.Bounds()
+    width, height := bounds.Max.X, bounds.Max.Y
+
+    // 縦成分と横成分の合計を格納する2次元配列を初期化
+    vertical := make([][]int, height)
+    horizontal := make([][]int, height)
+    for y := range vertical {
+        vertical[y] = make([]int, width)
+        horizontal[y] = make([]int, width)
+    }
+
+    // エッジ検出を行う
+    for y := 1; y < height-1; y++ {
+        for x := 1; x < width-1; x++ {
+            // 縦成分のエッジ検出
+            vertical[y][x] = int(color.GrayModel.Convert(img.At(x, y+1)).(color.Gray).Y) - int(color.GrayModel.Convert(img.At(x, y-1)).(color.Gray).Y)
+
+            // 横成分のエッジ検出
+            horizontal[y][x] = int(color.GrayModel.Convert(img.At(x+1, y)).(color.Gray).Y) - int(color.GrayModel.Convert(img.At(x-1, y)).(color.Gray).Y)
+        }
+    }
+
+    return vertical, horizontal
+}
+
 
 // convertImageToAscii convert image to ascii art
 // path : path to the image file
@@ -212,6 +243,8 @@ func convertImageToAscii(path string, width int, height int, colored bool) {
 	}
 	img_h := img.Bounds().Dy()
 	img_w := img.Bounds().Dx()
+	img_resized := resizeImage(img, width, height)
+	save_image(img_resized, 0)
 	dots := make([][]string, height)
 	for line := range dots {
 		dots[line] = make([]string, width)
@@ -219,7 +252,7 @@ func convertImageToAscii(path string, width int, height int, colored bool) {
 	output_ascii := ascii_img{height: height, width: width, dots: dots}
 
 	ch := make(chan bool, height*width)
-	fmt.Println(img_h, img_w)
+	// fmt.Println(img_h, img_w)
 	var wg sync.WaitGroup
 
 	wg.Add(height * width)
@@ -229,8 +262,9 @@ func convertImageToAscii(path string, width int, height int, colored bool) {
 		for j := 0; j < width; j++ {
 			trimmed_img := img.(SubImager).SubImage(image.Rect(j*w_len, i*h_len, (j+1)*w_len, (i+1)*h_len))
 			// save_image(trimmed_img, i*width+j)
-			dot := ascii_dot{row: i, col: j, color: colour{}, char: "."}
-			go output_ascii.addDot(&dot, trimmed_img, colored, ch, &wg)
+			r,g,b,_ := img_resized.At(j,i).RGBA()
+			dot := ascii_dot{row: i, col: j, color: colour{r:r,g:g,b:b}, char: "."}
+			go output_ascii.addDot(&dot, trimmed_img, ch, &wg)
 		}
 	}
 	wg.Wait()
@@ -258,7 +292,7 @@ func convertLineToAscii(img image.Image, line int, colored bool) {
 		r, g, b, _ := img.At(i, line).RGBA()
 		ascii += convertPixelToAscii(r, g, b, colored)
 	}
-	fmt.Println(ascii)
+	// fmt.Println(ascii)
 }
 
 func convertPixelToAscii(r uint32, g uint32, b uint32, colored bool) string {
