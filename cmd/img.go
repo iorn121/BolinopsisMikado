@@ -6,6 +6,7 @@ package cmd
 import (
 	"fmt"
 	"image"
+	"math"
 	"image/color"
 	_ "image/gif"
 	"image/jpeg"
@@ -187,39 +188,34 @@ func decideChar(img image.Image) string {
 	// ascii_chars := "!\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~"
 	// 各文字列を画像処理して、エッジを計算して縦成分と横成分の合計を計算する
 
-	// vertical, horizontal := detectEdges(img)
+	vertical, horizontal := detectEdges(img)
 
-	// fmt.Println(vertical, horizontal)
+	fmt.Println(vertical, horizontal)
 
 	return "x"
 }
 
 // 画像のエッジ検出を行う関数
-func detectEdges(img image.Image) ([][]int, [][]int) {
-    // 画像の幅と高さを取得
-    bounds := img.Bounds()
-    width, height := bounds.Max.X, bounds.Max.Y
+func detectEdges(img image.Image) (float64, float64) {
+	// 画像の幅と高さを取得
+	bounds := img.Bounds()
+	width, height := bounds.Max.X, bounds.Max.Y
 
-    // 縦成分と横成分の合計を格納する2次元配列を初期化
-    vertical := make([][]int, height)
-    horizontal := make([][]int, height)
-    for y := range vertical {
-        vertical[y] = make([]int, width)
-        horizontal[y] = make([]int, width)
-    }
+	// 縦成分と横成分の合計を格納する2次元配列を初期化
+	vertical := 0.0
+	horizontal := 0.0
 
-    // エッジ検出を行う
-    for y := 1; y < height-1; y++ {
-        for x := 1; x < width-1; x++ {
-            // 縦成分のエッジ検出
-            vertical[y][x] = int(color.GrayModel.Convert(img.At(x, y+1)).(color.Gray).Y) - int(color.GrayModel.Convert(img.At(x, y-1)).(color.Gray).Y)
+	// エッジ検出を行う
+	for y := 1; y < height-1; y++ {
+		for x := 1; x < width-1; x++ {
+			// 縦成分のエッジ検出
+			vertical += math.Abs(float64(color.GrayModel.Convert(img.At(x, y+1)).(color.Gray).Y) - float64(color.GrayModel.Convert(img.At(x, y-1)).(color.Gray).Y))
+			// 横成分のエッジ検出
+			horizontal += math.Abs(float64(color.GrayModel.Convert(img.At(x+1, y)).(color.Gray).Y) - float64(color.GrayModel.Convert(img.At(x-1, y)).(color.Gray).Y))
+		}
+	}
 
-            // 横成分のエッジ検出
-            horizontal[y][x] = int(color.GrayModel.Convert(img.At(x+1, y)).(color.Gray).Y) - int(color.GrayModel.Convert(img.At(x-1, y)).(color.Gray).Y)
-        }
-    }
-
-    return vertical, horizontal
+	return vertical, horizontal
 }
 
 
