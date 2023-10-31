@@ -7,7 +7,11 @@ require (
 	golang.org/x/crypto v0.10.0
 )
 
-require gocv.io/x/gocv v0.34.0 // indirect
+require (
+	github.com/golang/freetype v0.0.0-20170609003504-e2365dfdc4a0 // indirect
+	gocv.io/x/gocv v0.34.0 // indirect
+	golang.org/x/image v0.13.0 // indirect
+)
 
 require (
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
