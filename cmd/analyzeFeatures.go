@@ -7,15 +7,18 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"bytes"
 	"log"
+	"net/http"
+	"os/exec"
 	"encoding/csv"
+	chart "github.com/wcharczuk/go-chart/v2"
 	"strconv"
 	"path/filepath"
 	"image"
 	"image/color"
 	"math"
 	"github.com/spf13/cobra"
-	"github.com/wcharczuk/go-chart"
 )
 
 // analyzeEdgeCmd represents the analyzeEdge command
@@ -42,7 +45,7 @@ to quickly create a Cobra application.`,
 				panic(err)
 			}
 			defer file.Close()
-			fmt.Fprintf(file, "%s, %f, %f, %f\n", path, vertical, horizontal, sum)
+			fmt.Fprintf(file, "%s,%f,%f,%f\n", path, vertical, horizontal, sum)
 		}
 		if showGraph {
 			showData()
@@ -59,7 +62,7 @@ func init() {
 func getFiles(dirpath string) []string {
 	var files []string
 	err := filepath.Walk(dirpath, func(path string, info os.FileInfo, err error) error {
-		if !info.IsDir() {
+		if !info.IsDir() && filepath.Ext(path) == ".jpg" {
 			files = append(files, path)
 		}
 		return nil
@@ -146,7 +149,6 @@ func showData() {
     // データを抽出する
     var xData []float64
     var yData []float64
-    var zData []float64
     for _, record := range records {
         x, err := strconv.ParseFloat(record[1], 64)
         if err != nil {
@@ -156,43 +158,65 @@ func showData() {
         if err != nil {
             log.Fatal(err)
         }
-        z, err := strconv.ParseFloat(record[3], 64)
-        if err != nil {
-            log.Fatal(err)
-        }
         xData = append(xData, x)
         yData = append(yData, y)
-        zData = append(zData, z)
     }
 
     // データをグラフ化する
     graph := chart.Chart{
+		Height: 500,
+		Width:  500,
+		Background: chart.Style{
+			Padding: chart.Box{
+				Top:  10,
+				Bottom: 10,
+				Left: 10,
+				Right: 10,
+			},
+		},
         XAxis: chart.XAxis{
             Name: "x",
         },
         YAxis: chart.YAxis{
             Name: "y",
         },
-        Series: []chart.Series{
-            chart.ContinuousSeries{
-                Name: "z",
-                XValues: xData,
-                YValues: zData,
-            },
-            chart.ContinuousSeries{
-                Name: "y",
-                XValues: xData,
-                YValues: yData,
-            },
-        },
+		Series: []chart.Series{
+			chart.ContinuousSeries{
+				Style: chart.Style{
+					StrokeWidth:      chart.Disabled,
+					DotWidth:         5,
+				},
+				XValues: xData,
+				YValues: yData,
+			},
+		},
     }
+	
     graph.Elements = []chart.Renderable{
         chart.Legend(&graph),
     }
 
-    // グラフを描画する
-    err = graph.Render(chart.PNG, os.Stdout)
+
+    // PNG形式の画像を作成する
+    buffer := bytes.Buffer{}
+    err = graph.Render(chart.PNG, &buffer)
     if err != nil {
         log.Fatal(err)
     }
+
+    // Webサーバーを起動して画像を表示する
+    http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+        w.Header().Set("Content-Type", "image/png")
+        w.Write(buffer.Bytes())
+    })
+    // Webブラウザを起動する
+    err = exec.Command("open", "http://localhost:8080").Start()
+    if err != nil {
+		log.Fatal(err.Error())
+    }
+	err = http.ListenAndServe(":8080", nil)
+	if err != nil {
+		log.Fatal(err)
+	}
+
 }
