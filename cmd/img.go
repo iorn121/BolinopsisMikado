@@ -29,7 +29,7 @@ func init() {
 	rootCmd.AddCommand(imgCmd)
 	imgCmd.Flags().StringP("path", "p", "", "image path to convert")
 	imgCmd.Flags().BoolP("colored", "c", true, "colored the ascii when output to the terminal")
-	imgCmd.Flags().BoolP("default", "d", true, "print default image")
+	imgCmd.Flags().BoolP("default", "d", false, "print default image")
 }
 
 // imgCmd represents the img command
@@ -188,9 +188,9 @@ func decideChar(img image.Image) string {
 	// ascii_chars := "!\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~"
 	// 各文字列を画像処理して、エッジを計算して縦成分と横成分の合計を計算する
 
-	vertical, horizontal := detectEdges(img)
+	// vertical, horizontal := detectEdges(img)
 
-	fmt.Println(vertical, horizontal)
+	// fmt.Println(vertical, horizontal)
 
 	return "x"
 }
@@ -240,7 +240,7 @@ func convertImageToAscii(path string, width int, height int, colored bool) {
 	img_h := img.Bounds().Dy()
 	img_w := img.Bounds().Dx()
 	img_resized := resizeImage(img, width, height)
-	save_image(img_resized, 0)
+	// save_image(img_resized, 0)
 	dots := make([][]string, height)
 	for line := range dots {
 		dots[line] = make([]string, width)

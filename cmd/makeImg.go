@@ -115,6 +115,7 @@ func readFont() font.Face {
 	}
 	opt := truetype.Options{
 		Size: 100,
+		DPI:  72,
 	}
 	face := truetype.NewFace(ft, &opt)
 	return face
