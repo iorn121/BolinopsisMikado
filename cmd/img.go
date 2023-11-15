@@ -162,28 +162,7 @@ func decideChar(img image.Image) string {
 			sum += uint64(r) + uint64(g) + uint64(b)
 		}
 	}
-	// fmt.Println(sum)
-	// if sum == 0 {
-	// 	return " "
-	// } else if sum < 256*256*3 {
-	// 	return "."
-	// } else if sum < 256*256*3*2 {
-	// 	return "*"
-	// } else if sum < 256*256*3*3 {
-	// 	return "+"
-	// } else if sum < 256*256*3*4 {
-	// 	return "x"
-	// } else if sum < 256*256*3*5 {
-	// 	return "X"
-	// } else if sum < 256*256*3*6 {
-	// 	return "M"
-	// } else if sum < 256*256*3*7 {
-	// 	return "W"
-	// } else if sum < 256*256*3*8 {
-	// 	return "#"
-	// } else {
-	// 	return "@"
-	// }
+
 
 	// ascii_chars := "!\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~"
 	// 各文字列を画像処理して、エッジを計算して縦成分と横成分の合計を計算する
@@ -248,16 +227,17 @@ func convertImageToAscii(path string, width int, height int, colored bool) {
 	output_ascii := ascii_img{height: height, width: width, dots: dots}
 
 	ch := make(chan bool, height*width)
-	// fmt.Println(img_h, img_w)
+	// fmt.Println(height, width)
 	var wg sync.WaitGroup
 
 	wg.Add(height * width)
 	h_len := img_h / height
 	w_len := img_w / width
+	fmt.Println(h_len, w_len)
 	for i := 0; i < height; i++ {
 		for j := 0; j < width; j++ {
 			trimmed_img := img.(SubImager).SubImage(image.Rect(j*w_len, i*h_len, (j+1)*w_len, (i+1)*h_len))
-			// save_image(trimmed_img, i*width+j)
+			save_image(trimmed_img, i*width+j)
 			r,g,b,_ := img_resized.At(j,i).RGBA()
 			dot := ascii_dot{row: i, col: j, color: colour{r:r,g:g,b:b}, char: "."}
 			go output_ascii.addDot(&dot, trimmed_img, ch, &wg)

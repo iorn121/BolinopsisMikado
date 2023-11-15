@@ -36,7 +36,7 @@ to quickly create a Cobra application.`,
 		showGraph, _ := cmd.Flags().GetBool("graph")
 		for _, path := range getFiles(dirpath) {
 			img := readImage(path)
-			vertical, horizontal, sum := calcFeatures(img)
+			vertical, horizontal, sum := countEdges(img)
 			// fmt.Printf("%s, %f, %f, %f\n", path, vertical, horizontal, sum)
 
 			// csvファイルに書き込む
@@ -88,8 +88,8 @@ func readImage(path string) image.Image {
 	return img
 }
 
-// 画像のエッジ密度を計算する関数
-func calcFeatures(img image.Image) (float64, float64, float64) {
+// 画像のエッジとみなすピクセルをカウントし、密度を求める関数
+func countEdges(img image.Image) (float64, float64, float64) {
 	// 画像の幅と高さを取得
 	bounds := img.Bounds()
 	width, height := bounds.Max.X, bounds.Max.Y
@@ -185,6 +185,7 @@ func showData() {
 				Style: chart.Style{
 					StrokeWidth:      chart.Disabled,
 					DotWidth:         5,
+					DotColor:         chart.ColorRed,
 				},
 				XValues: xData,
 				YValues: yData,
