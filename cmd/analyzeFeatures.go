@@ -5,6 +5,7 @@ Copyright © 2023 NAME HERE <EMAIL ADDRESS>
 package cmd
 
 import (
+	"io"
 	"fmt"
 	"os"
 	"bytes"
@@ -32,29 +33,38 @@ Cobra is a CLI library for Go that empowers applications.
 This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		dirpath:=args[0]
-		showGraph, _ := cmd.Flags().GetBool("graph")
-		for _, path := range getFiles(dirpath) {
-			img := readImage(path)
-			vertical, horizontal, sum := countEdges(img)
-			// fmt.Printf("%s, %f, %f, %f\n", path, vertical, horizontal, sum)
+		dirpath, _ := cmd.Flags().GetString("path")
+		NormalizeCSV(dirpath)
+	// 	outputpath, _ := cmd.Flags().GetString("output")
+	// 	showGraph, _ := cmd.Flags().GetBool("graph")
+	// 	if dirpath == "" {
+	// 		fmt.Printf("dir path is not specified")
+	// 		os.Exit(1)
+	// 	}
+	// 	filepath:= fmt.Sprintf("%s/%s", outputpath, "features.csv")
+	// 	for _, path := range getFiles(dirpath) {
+	// 		img := readImage(path)
+	// 		vertical, horizontal:= edgeDensity(img)
 
-			// csvファイルに書き込む
-			file, err := os.OpenFile("ascii/features.csv", os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0666)
-			if err != nil {
-				panic(err)
-			}
-			defer file.Close()
-			fmt.Fprintf(file, "%s,%f,%f,%f\n", path, vertical, horizontal, sum)
-		}
-		if showGraph {
-			showData()
-		}
+	// 		file, err := os.OpenFile(filepath, os.O_WRONLY|os.O_APPEND|os.O_CREATE, 0666)
+
+	// 		if err != nil {
+	// 			panic(err)
+	// 		}
+	// 		defer file.Close()
+	// 		fmt.Fprintf(file, "%s,%f,%f\n", path, vertical, horizontal)
+	// 	}
+	// 	if showGraph {
+	// 		showData(filepath)
+	// 	}
 	},
 }
 
 func init() {
 	rootCmd.AddCommand(analyzeFeaturesCmd)
+	analyzeFeaturesCmd.Flags().StringP("path", "p", "", "dir path to convert")
+	// デフォルトはDownloadディレクトリ
+	analyzeFeaturesCmd.Flags().StringP("output", "o", getDefaultDownloadPath() , "output dir path")
 	analyzeFeaturesCmd.Flags().BoolP("graph", "g", false, "graph image")
 }
 
@@ -122,16 +132,40 @@ func countEdges(img image.Image) (float64, float64, float64) {
 	return horizontal/float64(width*height), vertical/float64(width*height), sum/float64(width*height)
 }
 
+// 画像の縦横それぞれの明暗の差を計算して密度として返す関数
+func edgeDensity(img image.Image) (float64, float64) {
+	// 画像の幅と高さを取得
+	bounds := img.Bounds()
+	width, height := bounds.Max.X, bounds.Max.Y
 
+	// 縦成分と横成分、濃度の合計を格納する2次元配列を初期化
+	vertical := 0.0
+	horizontal := 0.0
 
-
-func showData() {
-    // CSVファイルを開く
-	isExist := pathExists("ascii/features.csv")
-	if !isExist {
-		log.Fatal("Error: ascii/features.csv does not exist")
+	// エッジ検出を行う
+	for y := 0; y < height; y++ {
+		for x := 0; x < width; x++ {
+			if x==0 || y==0 || x==width-1 || y==height-1 {
+				continue
+			}
+			// 縦成分のエッジ検出
+			vertical+= math.Abs(float64(color.GrayModel.Convert(img.At(x, y+1)).(color.Gray).Y) - float64(color.GrayModel.Convert(img.At(x, y-1)).(color.Gray).Y))
+			// 横成分のエッジ検出
+			horizontal+= math.Abs(float64(color.GrayModel.Convert(img.At(x+1, y)).(color.Gray).Y) - float64(color.GrayModel.Convert(img.At(x-1, y)).(color.Gray).Y))
+		}
 	}
-    f, err := os.Open("ascii/features.csv")
+
+	return horizontal/float64(width*height), vertical/float64(width*height)
+}
+
+
+func showData(filepath string) {
+    // CSVファイルを開く
+	isExist := pathExists(filepath)
+	if !isExist {
+		log.Fatal(fmt.Sprintf("Error: %s does not exist", filepath))
+	}
+    f, err := os.Open(filepath)
     if err != nil {
         log.Fatal(err)
     }
@@ -219,5 +253,85 @@ func showData() {
 	if err != nil {
 		log.Fatal(err)
 	}
+}
 
+
+// CSVファイルを読み込んで、x値とy値を0〜1の範囲に正規化する関数
+func NormalizeCSV(filename string) ([]string,[]float64, []float64, error) {
+    // CSVファイルを開く
+    file, err := os.Open(filename)
+    if err != nil {
+		return nil, nil, nil, err
+    }
+    defer file.Close()
+
+    // CSVリーダーを作成
+    reader := csv.NewReader(file)
+
+    // x値とy値を格納するスライス
+	var label []string
+    var xData []float64
+    var yData []float64
+	var xMin float64
+	var xMax float64
+	var yMin float64
+	var yMax float64
+
+    // CSVファイルを1行ずつ読み込む
+    for {
+        // 行を読み込む
+        record, err := reader.Read()
+        if err == io.EOF {
+            break
+        }
+        if err != nil {
+			return nil, nil, nil, err
+        }
+		label = append(label, record[0])
+        // x値とy値を取得
+        x, err := strconv.ParseFloat(record[1], 64)
+        if err != nil {
+			return nil, nil, nil, err
+        }
+		if x < xMin {
+			xMin = x
+		}
+		if x > xMax {
+			xMax = x
+		}
+        y, err := strconv.ParseFloat(record[2], 64)
+        if err != nil {
+			return nil, nil, nil, err
+        }
+		if y < yMin {
+			yMin = y
+		}
+		if y > yMax {
+			yMax = y
+		}
+
+        // 正規化された値をスライスに追加
+        xData = append(xData, x)
+        yData = append(yData, y)
+    }
+	var xNormalizedData []float64
+	var yNormalizedData []float64
+
+	for i, x := range xData {
+		if i<len(yData) {
+			y := yData[i]
+			// x値を0〜1の範囲に正規化
+			xNormalized := (x - xMin) / (xMax - xMin)
+
+			// y値を0〜1の範囲に正規化
+			yNormalized := (y - yMin) / (yMax - yMin)
+
+			// 正規化された値をスライスに追加
+			xNormalizedData = append(xNormalizedData, xNormalized)
+			yNormalizedData = append(yNormalizedData, yNormalized)
+		}
+	}
+	fmt.Printf("xMin: %f, xMax: %f, yMin: %f, yMax: %f\n", xMin, xMax, yMin, yMax)
+	fmt.Printf("xNormalized: %f, yNormalized: %f\n", xNormalizedData, yNormalizedData)
+	return label,xNormalizedData, yNormalizedData, nil
 }
