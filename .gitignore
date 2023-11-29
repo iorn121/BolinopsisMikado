@@ -1,1 +1,4 @@
-output/
+# output の .gitkeep 以外を対象外にする
+output/*
+!output/.gitkeep
+.DS_Store

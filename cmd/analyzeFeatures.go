@@ -34,8 +34,9 @@ This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		dirpath, _ := cmd.Flags().GetString("path")
-		NormalizeCSV(dirpath)
-	// 	outputpath, _ := cmd.Flags().GetString("output")
+		outputpath, _ := cmd.Flags().GetString("output")
+		data,_:=NormalizeCSV(dirpath)
+		save_csv(data,outputpath)
 	// 	showGraph, _ := cmd.Flags().GetBool("graph")
 	// 	if dirpath == "" {
 	// 		fmt.Printf("dir path is not specified")
@@ -66,6 +67,37 @@ func init() {
 	// デフォルトはDownloadディレクトリ
 	analyzeFeaturesCmd.Flags().StringP("output", "o", getDefaultDownloadPath() , "output dir path")
 	analyzeFeaturesCmd.Flags().BoolP("graph", "g", false, "graph image")
+}
+
+func save_csv(records []Feature,path string) {
+	// CSVファイルを開く
+	filepath:= fmt.Sprintf("%s/%s", path, "ratio_data.csv")
+	f, err := os.OpenFile(filepath, os.O_WRONLY|os.O_CREATE, 0600)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer f.Close()
+
+	// CSVファイルを書き込み可能な形で開く
+	w := csv.NewWriter(f)
+	defer w.Flush()
+
+	// データを書き込む
+	for _, record := range records {
+		// record.Y/record.X をratioとして書き込む
+		// record.Xが0の場合は0を書き込む
+		var ratio float64
+		if record.X == 0 {
+			ratio = 0
+		} else {
+			ratio = record.Y/record.X
+		}
+
+		content:=[]string{strconv.Itoa(record.Label),strconv.FormatFloat(ratio, 'f', -1, 64)}
+		if err := w.Write(content); err != nil {
+			log.Fatal(err)
+		}
+	}
 }
 
 // 画像のパスを取得する関数
@@ -255,13 +287,18 @@ func showData(filepath string) {
 	}
 }
 
+type Feature struct {
+	Label int
+	X float64
+	Y float64
+}
 
 // CSVファイルを読み込んで、x値とy値を0〜1の範囲に正規化する関数
-func NormalizeCSV(filename string) ([]string,[]float64, []float64, error) {
+func NormalizeCSV(filename string) ([]Feature, error) {
     // CSVファイルを開く
     file, err := os.Open(filename)
     if err != nil {
-		return nil, nil, nil, err
+		return nil, err
     }
     defer file.Close()
 
@@ -269,7 +306,6 @@ func NormalizeCSV(filename string) ([]string,[]float64, []float64, error) {
     reader := csv.NewReader(file)
 
     // x値とy値を格納するスライス
-	var label []string
     var xData []float64
     var yData []float64
 	var xMin float64
@@ -285,13 +321,12 @@ func NormalizeCSV(filename string) ([]string,[]float64, []float64, error) {
             break
         }
         if err != nil {
-			return nil, nil, nil, err
+			return nil, err
         }
-		label = append(label, record[0])
         // x値とy値を取得
         x, err := strconv.ParseFloat(record[1], 64)
         if err != nil {
-			return nil, nil, nil, err
+			return nil,  err
         }
 		if x < xMin {
 			xMin = x
@@ -301,7 +336,7 @@ func NormalizeCSV(filename string) ([]string,[]float64, []float64, error) {
 		}
         y, err := strconv.ParseFloat(record[2], 64)
         if err != nil {
-			return nil, nil, nil, err
+			return nil, err
         }
 		if y < yMin {
 			yMin = y
@@ -314,8 +349,7 @@ func NormalizeCSV(filename string) ([]string,[]float64, []float64, error) {
         xData = append(xData, x)
         yData = append(yData, y)
     }
-	var xNormalizedData []float64
-	var yNormalizedData []float64
+	var normalizeData []Feature
 
 	for i, x := range xData {
 		if i<len(yData) {
@@ -327,11 +361,10 @@ func NormalizeCSV(filename string) ([]string,[]float64, []float64, error) {
 			yNormalized := (y - yMin) / (yMax - yMin)
 
 			// 正規化された値をスライスに追加
-			xNormalizedData = append(xNormalizedData, xNormalized)
-			yNormalizedData = append(yNormalizedData, yNormalized)
+			normalizeData = append(normalizeData, Feature{Label: i+33, X: xNormalized, Y: yNormalized})
 		}
 	}
 	fmt.Printf("xMin: %f, xMax: %f, yMin: %f, yMax: %f\n", xMin, xMax, yMin, yMax)
-	fmt.Printf("xNormalized: %f, yNormalized: %f\n", xNormalizedData, yNormalizedData)
-	return label,xNormalizedData, yNormalizedData, nil
+	// fmt.Printf("Normalize data: %+v\n", normalizeData)
+	return normalizeData, nil
 }
