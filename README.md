@@ -25,11 +25,12 @@ go install github.com/iorn121/BolinopsisMikado@latest
 # Usage
 
 BolinopsisMikado [arguments]
+binary path: "~/go/bin/"
 
 The commands are:
 BolinopsisMikado lissajous [path] : When you type this command, a random lissajous gif image is generated and saved to the specified path.
 
-BolinopsisMikado img [filepath] : When you type this command, the image you specified will be displayed on your terminal window.
+BolinopsisMikado img2ascii [filepath] : When you type this command, the image converted into ASCII you specified will be displayed on your terminal window. Please set option "-d" if you want to display same image.
 
 Options:
 
